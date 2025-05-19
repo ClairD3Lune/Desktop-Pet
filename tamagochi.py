@@ -14,8 +14,30 @@ class Tamagotchi:
         self.level = level
         self.exp = exp
         self.nap_until = nap_until  # real time nap tracking
+        self.nap_ended = False  # flag for one-time energy boost
+
+    def process_nap_wake(self):
+        """Check if nap ended and apply boost once."""
+        if self.nap_until:
+            wake_time = datetime.fromisoformat(self.nap_until)
+            now = datetime.now()
+            if now >= wake_time and not self.nap_ended:
+                print(f"🌞 {self.name} woke up well-rested!")
+                self.energy = min(100, self.energy + 30)  # one-time boost
+                self.nap_ended = True
+                self.nap_until = None
+                self.update_mood()
+
+    def is_napping(self):
+        """Just returns True if currently sleeping, False otherwise."""
+        if self.nap_until:
+            wake_time = datetime.fromisoformat(self.nap_until)
+            return datetime.now() < wake_time
+        return False
 
     def show_status(self):
+        self.process_nap_wake()  # Check nap wake first!
+
         print(f"\n✨ {self.name}'s Stats ✨")
         print(f"🌱 Stage: {self.stage}")
         print(f"❤️ Mood: {self.mood}")
@@ -24,52 +46,39 @@ class Tamagotchi:
         print(f"⭐ Level: {self.level} | XP: {self.exp}/100")
 
         if self.is_napping():
-            print("🛌 Status: Napping... shhh 🪫")
-            self.show_ascii()
-            return  # early return, don't talk or react
+            remaining = datetime.fromisoformat(self.nap_until) - datetime.now()
+            minutes, seconds = divmod(remaining.total_seconds(), 60)
+            print(f"🛌 Status: Napping... {int(minutes)}m {int(seconds)}s left 🪫")
+            self.show_ascii(napping=True)
+            return  # no chatting while sleeping
 
         self.say_something()
         self.show_ascii()
 
-    def is_napping(self):
-        if self.nap_until:
-            wake_time = datetime.fromisoformat(self.nap_until)
-            now = datetime.now()
-            if now < wake_time:
-                remaining = wake_time - now
-                minutes, seconds = divmod(remaining.total_seconds(), 60)
-                print(f"🛌 {self.name} is sleeping for {int(minutes)}m {int(seconds)}s more.")
-                return True
-            else:
-                self.nap_until = None  # nap's over
-                print(f"🌞 {self.name} woke up well-rested!")
-                self.energy =min(100, self.energy + random.randint(10, 40))
-        return False
-
-    def show_ascii(self):
-        if self.is_napping():
+    def show_ascii(self, napping=False):
+        if napping:
             print(r"""
-  ( -_-) Zzz
-  (\__/)    
- ( – w – ) 
-  /　づ     """)
+  (-_-) zZz
+   ( . .)
+    / | \     
+                  """)
         elif self.stage == "baby":
             print(r"""
-  (\__/)
-  (•ㅅ•)   
-  / 　 づ
+  (\_._/)
+   ( •ᴥ• )
+   / >🍪
 """)
         elif self.stage == "teen":
             print(r"""
-  ʕ•́ᴥ•̀ʔっ
- (   ⊃⊃ )
+  (•_•)
+  <)   )╯
+   /   \
 """)
         elif self.stage == "eldritch abomination":
             print(r"""
-   ☉･‿･☉  
-  /█\▕█▕
- /  \    \
- [RUN]
+   (o_O)
+  <|   |>
+   /   \
 """)
 
     def say_something(self):
@@ -97,8 +106,9 @@ class Tamagotchi:
         if self.is_napping():
             print("It's already snoozing 💩 Let it rest, bestie.")
             return
-        nap_duration = timedelta(minutes=0.1)  # Change to hours if needed
+        nap_duration = timedelta(minutes=0.1)  # quick nap for testing
         self.nap_until = (datetime.now() + nap_duration).isoformat()
+        self.nap_ended = False  # reset boost flag for this nap
         print(f"\nPutting {self.name} to sleep. 🛌 It'll wake up soon.")
         self.update_mood()
 
@@ -167,7 +177,6 @@ class Tamagotchi:
                 return Tamagotchi(**data)
         return None
 
-# Main game loop
 def main():
     print("🎮 Welcome to Terminal Tamagotchi V2: Sassy Sleeper Edition")
     name = input("Name your Tamagotchi (or type to load): ").strip()
@@ -180,11 +189,13 @@ def main():
         print(f"✨ New digital child created: {name}")
 
     while True:
+        tama.process_nap_wake()  # wake-up boost check every loop
+
         tama.show_status()
 
         if tama.is_napping():
             print("😤 Let it finish its nap before doing anything else!")
-            time.sleep(2)  # pause for drama
+            time.sleep(2)
             continue
 
         print("\nActions: [1] Feed [2] Nap [3] Pet [4] Dungeon [5] Save [6] Quit")
