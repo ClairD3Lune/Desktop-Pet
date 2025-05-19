@@ -24,13 +24,25 @@ class Tamagotchi:
         print(f"⭐ Level: {self.level} | XP: {self.exp}/100")
 
         if self.is_napping():
-            print("😴 Status: Sleeping (come back later...)")
+            print("🛌 Status: Napping... shhh 🪫")
+            self.show_ascii()
+            return  # early return, don't talk or react
+
         self.say_something()
         self.show_ascii()
 
     def is_napping(self):
         if self.nap_until:
-            return datetime.now() < datetime.fromisoformat(self.nap_until)
+            wake_time = datetime.fromisoformat(self.nap_until)
+            now = datetime.now()
+            if now < wake_time:
+                remaining = wake_time - now
+                minutes, seconds = divmod(remaining.total_seconds(), 60)
+                print(f"🛌 {self.name} is sleeping for {int(minutes)}m {int(seconds)}s more.")
+                return True
+            else:
+                self.nap_until = None  # nap's over
+                print(f"🌞 {self.name} woke up well-rested!")
         return False
 
     def show_ascii(self):
@@ -53,8 +65,8 @@ class Tamagotchi:
 """)
         elif self.stage == "eldritch abomination":
             print(r"""
-   ☉﹏☉  
-  /█\▓█▓
+   ☉･‿･☉  
+  /█\▕█▕
  /  \    \
  [RUN]
 """)
@@ -62,15 +74,15 @@ class Tamagotchi:
     def say_something(self):
         mood_quotes = {
             "hungry": "🍔 Feed me or I *will* riot.",
-            "tired": "😴 Zzz... why am I even awake?",
+            "tired": "🛌 Zzz... why am I even awake?",
             "ecstatic": "✨ I feel ALIVE!!",
             "cosmically unstable": "👁 I have seen beyond the veil.",
             "happy": "😊 You’re the best, Pookie <3",
-            "bored": "😒 This is LAME.",
+            "bored": "🚒 This is LAME.",
             "neutral": "¯\\_(ツ)_/¯ meh.",
             "energetic": "⚡ LET’S GOOOOOO!!!"
         }
-        print(f"\n🗨️ {self.name} says: \"{mood_quotes.get(self.mood, '...')}\"")
+        print(f"\n🔨 {self.name} says: \"{mood_quotes.get(self.mood, '...')}\"")
 
     def feed(self):
         if self.is_napping():
@@ -82,25 +94,25 @@ class Tamagotchi:
 
     def nap(self):
         if self.is_napping():
-            print("It's already snoozing 💤 Let it rest, bestie.")
+            print("It's already snoozing 💩 Let it rest, bestie.")
             return
         nap_duration = timedelta(minutes=0.1)  # Change to hours if needed
         self.nap_until = (datetime.now() + nap_duration).isoformat()
-        print("Your pet went to sleep. 🛌 It'll wake up soon.")
+        print(f"\nPutting {self.name} to sleep. 🛌 It'll wake up soon.")
         self.update_mood()
 
     def pet(self):
         if self.is_napping():
             print("Petting a sleeping creature... suspicious 😳")
         else:
-            print("A gentle pat 🖐🥺 It liked that.")
+            print("A gentle pat 💐🫡 It liked that.")
         self.mood = random.choice(["happy", "ecstatic", "bored"])
-    
+
     def dungeon(self):
         if self.is_napping():
             print("Let it nap! Dungeons can wait. 😤")
             return
-        print("Marching into the dungeon like a legend. 🗡️")
+        print("Marching into the dungeon like a legend. 🚡️")
         enemies = ["slime", "goblin", "shadow being", "your ex"]
         enemy = random.choice(enemies)
         print(f"A wild {enemy} appears!")
@@ -144,7 +156,7 @@ class Tamagotchi:
         data = self.__dict__
         with open(f"{self.name}.json", "w") as f:
             json.dump(data, f)
-        print("💾 Saved! Don't lose me, Pookie!")
+        print("📂 Saved! Don't lose me, Pookie!")
 
     @staticmethod
     def load(name):
@@ -158,7 +170,7 @@ class Tamagotchi:
 def main():
     print("🎮 Welcome to Terminal Tamagotchi V2: Sassy Sleeper Edition")
     name = input("Name your Tamagotchi (or type to load): ").strip()
-    
+
     tama = Tamagotchi.load(name)
     if tama:
         print(f"Welcome back, {name}! 😎")
@@ -168,6 +180,12 @@ def main():
 
     while True:
         tama.show_status()
+
+        if tama.is_napping():
+            print("😤 Let it finish its nap before doing anything else!")
+            time.sleep(2)  # pause for drama
+            continue
+
         print("\nActions: [1] Feed [2] Nap [3] Pet [4] Dungeon [5] Save [6] Quit")
         choice = input("> ").strip()
 
