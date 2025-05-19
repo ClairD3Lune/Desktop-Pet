@@ -43,6 +43,7 @@ class Tamagotchi:
             else:
                 self.nap_until = None  # nap's over
                 print(f"🌞 {self.name} woke up well-rested!")
+                self.energy =min(100, self.energy + random.randint(10, 40))
         return False
 
     def show_ascii(self):
